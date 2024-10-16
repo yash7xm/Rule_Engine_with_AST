@@ -92,11 +92,11 @@ func (p *Parser) EqualityExpression() *Node {
 }
 
 func (p *Parser) RelationalExpression() *Node {
-	left := p.UnaryExpression()
+	left := p.PrimaryExpression()
 
 	for p.lookahead.Type == "RELATIONAL_OPERATOR" {
 		operator, _ := p.eat("RELATIONAL_OPERATOR")
-		right := p.UnaryExpression()
+		right := p.PrimaryExpression()
 
 		return &Node{
 			Type:  "BinaryExpression",
@@ -110,11 +110,69 @@ func (p *Parser) RelationalExpression() *Node {
 	return left
 }
 
-func (p *Parser) UnaryExpression() *Node {
+func (p *Parser) PrimaryExpression() *Node {
+	if p.isLiteral(p.lookahead.Type) {
+		return p.Literal()
+	}
 
+	return nil
+}
+
+func (p *Parser) isLiteral(tokenType string) bool {
+	return tokenType == "NUMBER" ||
+		tokenType == "STRING" ||
+		tokenType == "true" ||
+		tokenType == "false" ||
+		tokenType == "null"
+}
+
+func (p *Parser) Literal() *Node {
+	switch p.lookahead.Type {
+	case "NUMBER":
+		return p.NumericLiteral()
+	case "STRING":
+		return p.StringLiteral()
+	case "true":
+		return p.BooleanLiteral("true")
+	case "false":
+		return p.BooleanLiteral("false")
+	case "null":
+		return p.NullLiteral()
+	default:
+		fmt.Println("literal: unexpected literal production.")
+		return nil
+	}
+}
+
+func (p *Parser) NumericLiteral() *Node {
+	token, _ := p.eat("NUMBER")
 	return &Node{
-		Type:  "LogicalAndExpression",
-		Value: "someValue",
+		Type:  "NumericLiteral",
+		Value: token.Value,
+	}
+}
+
+func (p *Parser) StringLiteral() *Node {
+	token, _ := p.eat("STRING")
+	return &Node{
+		Type:  "StringLiteral",
+		Value: token.Value,
+	}
+}
+
+func (p *Parser) BooleanLiteral(value string) *Node {
+	token, _ := p.eat(value)
+	return &Node{
+		Type:  "BooleanLiteral",
+		Value: token.Value,
+	}
+}
+
+func (p *Parser) NullLiteral() *Node {
+	p.eat("null")
+	return &Node{
+		Type:  "NullLiteral",
+		Value: "null",
 	}
 }
 
