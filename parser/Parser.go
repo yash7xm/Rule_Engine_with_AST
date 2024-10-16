@@ -60,6 +60,8 @@ func (p *Parser) LogicalAndExpression() *Node {
 		operator, _ := p.eat("LOGICAL_AND")
 		right := p.EqualityExpression()
 
+		fmt.Println(operator.Value)
+
 		return &Node{
 			Type:  "LogicalAndExpression",
 			Value: operator.Value,
@@ -78,6 +80,8 @@ func (p *Parser) EqualityExpression() *Node {
 	for p.lookahead.Type == "EQUALITY_OPERATOR" {
 		operator, _ := p.eat("EQUALITY_OPERATOR")
 		right := p.RelationalExpression()
+
+		fmt.Println(operator.Value)
 
 		return &Node{
 			Type:  "BinaryExpression",
@@ -98,6 +102,8 @@ func (p *Parser) RelationalExpression() *Node {
 		operator, _ := p.eat("RELATIONAL_OPERATOR")
 		right := p.PrimaryExpression()
 
+		fmt.Println(operator.Value)
+
 		return &Node{
 			Type:  "BinaryExpression",
 			Value: operator.Value,
@@ -115,7 +121,21 @@ func (p *Parser) PrimaryExpression() *Node {
 		return p.Literal()
 	}
 
+	switch p.lookahead.Type {
+	case "IDENTIFIER":
+		return p.Identifier()
+	}
+
 	return nil
+}
+
+func (p *Parser) Identifier() *Node {
+	name, _ := p.eat("IDENTIFIER")
+	fmt.Println(name.Value)
+	return &Node{
+		Type:  "Identifier",
+		Value: name.Value,
+	}
 }
 
 func (p *Parser) isLiteral(tokenType string) bool {
@@ -146,6 +166,7 @@ func (p *Parser) Literal() *Node {
 
 func (p *Parser) NumericLiteral() *Node {
 	token, _ := p.eat("NUMBER")
+	fmt.Println(token.Value)
 	return &Node{
 		Type:  "NumericLiteral",
 		Value: token.Value,
