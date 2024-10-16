@@ -28,8 +28,6 @@ func NewParser(tokenizer *Tokenizer) *Parser {
 // ParseRule parses the entire rule and returns the AST.
 func (p *Parser) ParseRule() *Node {
 	p.lookahead = p.tokenizer.GetNextToken() // Initialize the first token.
-	fmt.Println(p.lookahead.Type)
-	fmt.Println(p.lookahead.Value)
 	return p.Construct()
 }
 
@@ -44,7 +42,7 @@ func (p *Parser) LogicalOrExpression() *Node {
 		operator, _ := p.eat("LOGICAL_OR")
 		right := p.LogicalAndExpression()
 
-		left = &Node{
+		return &Node{
 			Type:  "LogicalOrExpression",
 			Value: operator.Value,
 			Left:  left,
@@ -55,10 +53,65 @@ func (p *Parser) LogicalOrExpression() *Node {
 	return left
 }
 
-// LogicalAndExpression is a placeholder function for logical AND expressions.
 func (p *Parser) LogicalAndExpression() *Node {
-	// Implementation for LogicalAndExpression goes here.
-	// This is just a stub for now, assuming it returns a valid node.
+	left := p.EqualityExpression()
+
+	for p.lookahead.Type == "LOGICAL_AND" {
+		operator, _ := p.eat("LOGICAL_AND")
+		right := p.EqualityExpression()
+
+		return &Node{
+			Type:  "LogicalAndExpression",
+			Value: operator.Value,
+			Left:  left,
+			Right: right,
+		}
+
+	}
+
+	return left
+}
+
+func (p *Parser) EqualityExpression() *Node {
+	left := p.RelationalExpression()
+
+	for p.lookahead.Type == "EQUALITY_OPERATOR" {
+		operator, _ := p.eat("EQUALITY_OPERATOR")
+		right := p.RelationalExpression()
+
+		return &Node{
+			Type:  "BinaryExpression",
+			Value: operator.Value,
+			Left:  left,
+			Right: right,
+		}
+
+	}
+
+	return left
+}
+
+func (p *Parser) RelationalExpression() *Node {
+	left := p.UnaryExpression()
+
+	for p.lookahead.Type == "RELATIONAL_OPERATOR" {
+		operator, _ := p.eat("RELATIONAL_OPERATOR")
+		right := p.UnaryExpression()
+
+		return &Node{
+			Type:  "BinaryExpression",
+			Value: operator.Value,
+			Left:  left,
+			Right: right,
+		}
+
+	}
+
+	return left
+}
+
+func (p *Parser) UnaryExpression() *Node {
+
 	return &Node{
 		Type:  "LogicalAndExpression",
 		Value: "someValue",

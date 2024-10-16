@@ -7,7 +7,7 @@ import (
 
 func main() {
 	// rule := "((age > 30 AND department = 'Sales') OR (age < 25 AND department = 'Marketing')) AND (salary > 50000 OR experience > 5)"
-	rule := "age > 30 AND department = 'Sales'"
+	rule := "(age > 30 AND department = 'Sales') OR (department = 'Sales')"
 	tokenizer := parser.NewTokenizer(rule)
 	p := parser.NewParser(tokenizer)
 
