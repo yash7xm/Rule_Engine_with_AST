@@ -38,11 +38,11 @@ func (p *Parser) Construct() *Node {
 func (p *Parser) LogicalOrExpression() *Node {
 	left := p.LogicalAndExpression()
 
-	for p.lookahead.Type == "LOGICAL_OR" {
+	for p.lookahead != nil && p.lookahead.Type == "LOGICAL_OR" {
 		operator, _ := p.eat("LOGICAL_OR")
 		right := p.LogicalAndExpression()
 
-		return &Node{
+		left = &Node{
 			Type:  "LogicalOrExpression",
 			Value: operator.Value,
 			Left:  left,
@@ -56,19 +56,16 @@ func (p *Parser) LogicalOrExpression() *Node {
 func (p *Parser) LogicalAndExpression() *Node {
 	left := p.EqualityExpression()
 
-	for p.lookahead.Type == "LOGICAL_AND" {
+	for p.lookahead != nil && p.lookahead.Type == "LOGICAL_AND" {
 		operator, _ := p.eat("LOGICAL_AND")
 		right := p.EqualityExpression()
 
-		fmt.Println(operator.Value)
-
-		return &Node{
+		left = &Node{
 			Type:  "LogicalAndExpression",
 			Value: operator.Value,
 			Left:  left,
 			Right: right,
 		}
-
 	}
 
 	return left
@@ -77,19 +74,16 @@ func (p *Parser) LogicalAndExpression() *Node {
 func (p *Parser) EqualityExpression() *Node {
 	left := p.RelationalExpression()
 
-	for p.lookahead.Type == "EQUALITY_OPERATOR" {
+	for p.lookahead != nil && p.lookahead.Type == "EQUALITY_OPERATOR" {
 		operator, _ := p.eat("EQUALITY_OPERATOR")
 		right := p.RelationalExpression()
 
-		fmt.Println(operator.Value)
-
-		return &Node{
+		left = &Node{
 			Type:  "BinaryExpression",
 			Value: operator.Value,
 			Left:  left,
 			Right: right,
 		}
-
 	}
 
 	return left
@@ -98,19 +92,16 @@ func (p *Parser) EqualityExpression() *Node {
 func (p *Parser) RelationalExpression() *Node {
 	left := p.PrimaryExpression()
 
-	for p.lookahead.Type == "RELATIONAL_OPERATOR" {
+	for p.lookahead != nil && p.lookahead.Type == "RELATIONAL_OPERATOR" {
 		operator, _ := p.eat("RELATIONAL_OPERATOR")
 		right := p.PrimaryExpression()
 
-		fmt.Println(operator.Value)
-
-		return &Node{
+		left = &Node{
 			Type:  "BinaryExpression",
 			Value: operator.Value,
 			Left:  left,
 			Right: right,
 		}
-
 	}
 
 	return left
@@ -124,14 +115,23 @@ func (p *Parser) PrimaryExpression() *Node {
 	switch p.lookahead.Type {
 	case "IDENTIFIER":
 		return p.Identifier()
+	case "(":
+		return p.ParenthesizedExpression()
+	default:
+		fmt.Printf("PrimaryExpression: unexpected token %s\n", p.lookahead.Type)
+		return nil
 	}
+}
 
-	return nil
+func (p *Parser) ParenthesizedExpression() *Node {
+	p.eat("(") // Consume '('
+	exp := p.LogicalOrExpression()
+	p.eat(")") // Consume ')'
+	return exp
 }
 
 func (p *Parser) Identifier() *Node {
 	name, _ := p.eat("IDENTIFIER")
-	fmt.Println(name.Value)
 	return &Node{
 		Type:  "Identifier",
 		Value: name.Value,
@@ -159,14 +159,13 @@ func (p *Parser) Literal() *Node {
 	case "null":
 		return p.NullLiteral()
 	default:
-		fmt.Println("literal: unexpected literal production.")
+		fmt.Println("Literal: unexpected literal production.")
 		return nil
 	}
 }
 
 func (p *Parser) NumericLiteral() *Node {
 	token, _ := p.eat("NUMBER")
-	fmt.Println(token.Value)
 	return &Node{
 		Type:  "NumericLiteral",
 		Value: token.Value,
@@ -208,6 +207,7 @@ func (p *Parser) eat(tokenType string) (*Token, error) {
 		return nil, fmt.Errorf("unexpected token: %s, expected: %s", token.Value, tokenType)
 	}
 
-	p.lookahead = p.tokenizer.GetNextToken() // Move to the next token.
+	// Move to the next token.
+	p.lookahead = p.tokenizer.GetNextToken()
 	return token, nil
 }
