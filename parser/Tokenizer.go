@@ -37,42 +37,15 @@ var Spec = []struct {
 
 	// Relational operators
 	{regexp.MustCompile(`^[<>]=?`), "RELATIONAL_OPERATOR"},
-	{regexp.MustCompile(`^[=!]=`), "EQUALITY_OPERATOR"},
+	{regexp.MustCompile(`^=`), "EQUALITY_OPERATOR"},
 
 	// Logical operators
 	{regexp.MustCompile(`^&&`), "LOGICAL_AND"},
 	{regexp.MustCompile(`^\|\|`), "LOGICAL_OR"},
 	{regexp.MustCompile(`^!`), "LOGICAL_NOT"},
-
-	// Keywords
-	{regexp.MustCompile(`^\blet\b`), "let"},
-	{regexp.MustCompile(`^\bif\b`), "if"},
-	{regexp.MustCompile(`^\belif\b`), "elif"},
-	{regexp.MustCompile(`^\belse\b`), "else"},
-	{regexp.MustCompile(`^\btrue\b`), "true"},
-	{regexp.MustCompile(`^\bfalse\b`), "false"},
-	{regexp.MustCompile(`^\bnull\b`), "null"},
-
-	// OOP keywords
-	{regexp.MustCompile(`^\bclass\b`), "class"},
-	{regexp.MustCompile(`^\bthis\b`), "this"},
-	{regexp.MustCompile(`^\bextends\b`), "extends"},
-	{regexp.MustCompile(`^\bsuper\b`), "super"},
-	{regexp.MustCompile(`^\bnew\b`), "new"},
-	{regexp.MustCompile(`^\bmodule\b`), "module"},
-	{regexp.MustCompile(`^\bimport\b`), "import"},
-
-	// Iterators
-	{regexp.MustCompile(`^\bwhile\b`), "while"},
-	{regexp.MustCompile(`^\bdo\b`), "do"},
-	{regexp.MustCompile(`^\bfor\b`), "for"},
-
-	{regexp.MustCompile(`^\bdef\b`), "def"},
-	{regexp.MustCompile(`^\breturn\b`), "return"},
-
-	// Assignment operators
-	{regexp.MustCompile(`^=`), "SIMPLE_ASSIGN"},
-	{regexp.MustCompile(`^[\*\\/\+\-]=`), "COMPLEX_ASSIGN"},
+	{regexp.MustCompile(`^\bAND\b`), "LOGICAL_AND"},
+	{regexp.MustCompile(`^\bOR\b`), "LOGICAL_OR"},
+	{regexp.MustCompile(`^\bNOT\b`), "LOGICAL_NOT"},
 
 	// Math operators
 	{regexp.MustCompile(`^[+\-]`), "ADDITIVE_OPERATOR"},
