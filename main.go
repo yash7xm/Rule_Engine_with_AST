@@ -1,39 +1,55 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 
-	"github.com/yash7xm/Rule_Engine_with_AST/interpreter"
 	"github.com/yash7xm/Rule_Engine_with_AST/parser"
-	"github.com/yash7xm/Rule_Engine_with_AST/utils"
 )
 
-func main() {
-	// Define the rule
-	// rule := "((age > 30 AND department = 'Sales') OR (age < 25 AND department = 'Marketing')) AND (salary > 50000 OR experience > 5)"
-
-	rule := "age > "
-	// Tokenizer and parser for the rule
-	tokenizer := parser.NewTokenizer(rule)
-	p := parser.NewParser(tokenizer)
-
-	// Parse the rule into an AST
-	ast := p.ParseRule()
-
-	// Print the entire AST structure
-	fmt.Println("AST Structure:")
-	utils.PrintAST(ast, 0)
-
-	// Example context data to evaluate the rule
-	context := interpreter.Context{
-		"age":        32,
-		"department": "Sales",
-		"salary":     60000,
-		"experience": 3,
+// API to create a rule
+func createRuleHandler(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		RuleString string `json:"rule_string"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
 	}
 
-	// Interpret the AST against the context data
-	result := interpreter.Interpret(ast, context)
+	// Create AST and handle any errors
+	ast, err := createAST(req.RuleString)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error creating AST: %s", err), http.StatusBadRequest)
+		return
+	}
 
-	fmt.Printf("Result of rule evaluation: %v\n", result)
+	// Serialize the AST parser.Node to JSON and send it as a response
+	response, _ := json.Marshal(ast)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(response)
+}
+
+// Start the HTTP server
+func main() {
+	http.HandleFunc("/create_rule", createRuleHandler)
+
+	port := ":8080"
+	fmt.Printf("Server is running on port %s...\n", port)
+	if err := http.ListenAndServe(port, nil); err != nil {
+		fmt.Printf("Error starting server: %s\n", err)
+	}
+}
+
+// Placeholder functions for AST operations
+func createAST(rule string) (*parser.Node, error) {
+	tokenizer := parser.NewTokenizer(rule)
+	p := parser.NewParser(tokenizer)
+	ast, err := p.ParseRule()
+	if err != nil {
+		return nil, err
+	}
+	return ast, nil
 }
