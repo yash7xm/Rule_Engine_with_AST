@@ -90,37 +90,52 @@ func TestCombineRulesHandler(t *testing.T) {
 }
 
 // Test for evaluateRuleHandler
+// Test for EvaluateRuleHandler
 func TestEvaluateRuleHandler(t *testing.T) {
 	// Mock request data, representing AST as a JSON-like map structure
-	reqBody := map[string]interface{}{
-		"ast": map[string]interface{}{
+	reqBody := `{
+		"ast": {
+		  "Type": "LogicalOrExpression",
+		  "Value": "OR",
+		  "Left": {
+			"Type": "LogicalAndExpression",
+			"Value": "AND",
+			"Left": {
+			  "Type": "BinaryExpression",
+			  "Value": ">",
+			  "Left": { "Type": "Identifier", "Value": "age" },
+			  "Right": { "Type": "NumericLiteral", "Value": "20" }
+			},
+			"Right": {
+			  "Type": "BinaryExpression",
+			  "Value": "<",
+			  "Left": { "Type": "Identifier", "Value": "age" },
+			  "Right": { "Type": "NumericLiteral", "Value": "30" }
+			}
+		  },
+		  "Right": {
 			"Type": "BinaryExpression",
-			"Left": map[string]interface{}{
-				"Type":  "Identifier",
-				"Value": "a",
-			},
-			"Right": map[string]interface{}{
-				"Type":  "StringLiteral",
-				"Value": "1",
-			},
 			"Value": "=",
+			"Left": { "Type": "Identifier", "Value": "status" },
+			"Right": { "Type": "StringLiteral", "Value": "active" }
+		  }
 		},
-		"data": map[string]interface{}{
-			"a": "1",
-		},
-	}
+		"data": { "age": 25, "status": "active" }
+	  }
+	  `
 
 	// Create a new request with the mocked request body
-	req := newJSONRequest(t, "POST", "/evaluate_rule", reqBody)
+	req := httptest.NewRequest("POST", "/evaluate_rule", strings.NewReader(reqBody))
+	req.Header.Set("Content-Type", "application/json")
 
-	// Create a new response recorder
+	// Create a new response recorder to capture the handler's response
 	rr := httptest.NewRecorder()
 
 	// Call the handler (adjust the handler call as per your routes)
 	handler := http.HandlerFunc(routes.EvaluateRuleHandler)
 	handler.ServeHTTP(rr, req)
 
-	// Check the status code
+	// Check the status code is what we expect (200 OK)
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("Expected status code %d, got %d", http.StatusOK, status)
 	}
