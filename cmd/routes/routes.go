@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	db "github.com/yash7xm/Rule_Engine_with_AST/internal/database"
 	"github.com/yash7xm/Rule_Engine_with_AST/internal/interpreter"
 	"github.com/yash7xm/Rule_Engine_with_AST/internal/parser"
 	"github.com/yash7xm/Rule_Engine_with_AST/internal/utils"
@@ -19,32 +20,47 @@ func NewRouter() http.Handler {
 	return mux
 }
 
-// API to create a rule
+// CreateRuleHandler handles the creation of a rule and stores it in the database.
 func CreateRuleHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		RuleString string `json:"rule_string"`
 	}
+
+	// Decode the incoming request JSON body
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	// Create AST and handle any errors
+	// Create AST (Abstract Syntax Tree) from the rule string
 	ast, err := createAST(req.RuleString)
 	if err != nil {
-		http.Error(w, "Error creating AST: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("Error creating AST: %s", err), http.StatusBadRequest)
 		return
 	}
 
-	// Serialize the AST parser.Node to JSON and send it as a response
-	response, err := json.Marshal(ast)
+	// Convert AST to JSON format to store in the database
+	astJSON, err := json.Marshal(ast)
 	if err != nil {
 		http.Error(w, "Error marshaling AST to JSON", http.StatusInternalServerError)
 		return
 	}
+
+	// Insert the rule and the AST into the database
+	query := `INSERT INTO rules (rule_string, ast) VALUES ($1, $2) RETURNING id`
+	var ruleID int
+	err = db.DB.QueryRow(query, req.RuleString, astJSON).Scan(&ruleID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error storing rule: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Return success response with the rule ID
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(response)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Rule created successfully",
+		"rule_id": ruleID,
+	})
 }
 
 // API to combine rules
