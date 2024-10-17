@@ -13,7 +13,11 @@ func runTestRule(t *testing.T, rule string, context Context, expected bool) {
 	tokenizer := parser.NewTokenizer(rule)
 	p := parser.NewParser(tokenizer)
 
-	ast, _  := p.ParseRule()
+	ast, err  := p.ParseRule()
+
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	result := Interpret(ast, context)
 

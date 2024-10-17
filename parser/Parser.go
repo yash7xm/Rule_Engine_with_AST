@@ -31,7 +31,7 @@ func (p *Parser) ParseRule() (*Node, error) {
 
 	// Handle the case where the input is empty
 	if p.lookahead == nil {
-		return nil, fmt.Errorf("empty input, unable to parse rule")
+		return nil, fmt.Errorf("parsing error: input is empty. Please provide a valid rule")
 	}
 
 	ast, err := p.Construct()
@@ -46,6 +46,7 @@ func (p *Parser) Construct() (*Node, error) {
 	return p.LogicalOrExpression()
 }
 
+// LogicalOrExpression processes logical OR expressions.
 func (p *Parser) LogicalOrExpression() (*Node, error) {
 	left, err := p.LogicalAndExpression()
 	if err != nil {
@@ -55,12 +56,11 @@ func (p *Parser) LogicalOrExpression() (*Node, error) {
 	for p.lookahead != nil && p.lookahead.Type == "LOGICAL_OR" {
 		operator, err := p.eat("LOGICAL_OR")
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("expected 'OR' operator, but got: %s", p.lookahead.Value)
 		}
-
 		right, err := p.LogicalAndExpression()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("logical OR expression error while parsing right side: %s", err)
 		}
 
 		left = &Node{
@@ -74,6 +74,7 @@ func (p *Parser) LogicalOrExpression() (*Node, error) {
 	return left, nil
 }
 
+// LogicalAndExpression processes logical AND expressions.
 func (p *Parser) LogicalAndExpression() (*Node, error) {
 	left, err := p.EqualityExpression()
 	if err != nil {
@@ -83,12 +84,11 @@ func (p *Parser) LogicalAndExpression() (*Node, error) {
 	for p.lookahead != nil && p.lookahead.Type == "LOGICAL_AND" {
 		operator, err := p.eat("LOGICAL_AND")
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("expected 'AND' operator, but got: %s", p.lookahead.Value)
 		}
-
 		right, err := p.EqualityExpression()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("logical AND expression error while parsing right side: %s", err)
 		}
 
 		left = &Node{
@@ -102,6 +102,7 @@ func (p *Parser) LogicalAndExpression() (*Node, error) {
 	return left, nil
 }
 
+// EqualityExpression processes equality expressions.
 func (p *Parser) EqualityExpression() (*Node, error) {
 	left, err := p.RelationalExpression()
 	if err != nil {
@@ -111,12 +112,12 @@ func (p *Parser) EqualityExpression() (*Node, error) {
 	for p.lookahead != nil && p.lookahead.Type == "EQUALITY_OPERATOR" {
 		operator, err := p.eat("EQUALITY_OPERATOR")
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("expected 'EQUALITY_OPERATOR' but got: %s", p.lookahead.Value)
 		}
 
 		right, err := p.RelationalExpression()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to parse right side of equality expression: %w", err)
 		}
 
 		left = &Node{
@@ -130,6 +131,7 @@ func (p *Parser) EqualityExpression() (*Node, error) {
 	return left, nil
 }
 
+// RelationalExpression processes relational expressions.
 func (p *Parser) RelationalExpression() (*Node, error) {
 	left, err := p.PrimaryExpression()
 	if err != nil {
@@ -139,12 +141,12 @@ func (p *Parser) RelationalExpression() (*Node, error) {
 	for p.lookahead != nil && p.lookahead.Type == "RELATIONAL_OPERATOR" {
 		operator, err := p.eat("RELATIONAL_OPERATOR")
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("expected '>,<,>=,<=' but got: %s", p.lookahead.Value)
 		}
 
 		right, err := p.PrimaryExpression()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to parse right side of relational expression: %w", err)
 		}
 
 		left = &Node{
@@ -158,9 +160,10 @@ func (p *Parser) RelationalExpression() (*Node, error) {
 	return left, nil
 }
 
+// PrimaryExpression processes primary expressions.
 func (p *Parser) PrimaryExpression() (*Node, error) {
 	if p.lookahead == nil {
-		return nil, fmt.Errorf("unexpected nil lookahead in PrimaryExpression")
+		return nil, fmt.Errorf("unexpected end of input in PrimaryExpression expected an Identifier or '(,)'")
 	}
 
 	if p.isLiteral(p.lookahead.Type) {
@@ -173,33 +176,35 @@ func (p *Parser) PrimaryExpression() (*Node, error) {
 	case "(":
 		return p.ParenthesizedExpression()
 	default:
-		return nil, fmt.Errorf("unexpected token %s in PrimaryExpression", p.lookahead.Type)
+		return nil, fmt.Errorf("unexpected token '%s' in PrimaryExpression; expected IDENTIFIER, '(', or a literal", p.lookahead.Value)
 	}
 }
 
+// ParenthesizedExpression processes expressions enclosed in parentheses.
 func (p *Parser) ParenthesizedExpression() (*Node, error) {
 	_, err := p.eat("(")
 	if err != nil {
-		return nil, fmt.Errorf("error in ParenthesizedExpression: %w", err)
+		return nil, fmt.Errorf("failed to parse ParenthesizedExpression: %w", err)
 	}
 
 	exp, err := p.LogicalOrExpression()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse expression inside parentheses: %w", err)
 	}
 
 	_, err = p.eat(")")
 	if err != nil {
-		return nil, fmt.Errorf("error in ParenthesizedExpression: %w", err)
+		return nil, fmt.Errorf("failed to find closing parenthesis in ParenthesizedExpression: %w", err)
 	}
 
 	return exp, nil
 }
 
+// Identifier processes identifier tokens.
 func (p *Parser) Identifier() (*Node, error) {
 	name, err := p.eat("IDENTIFIER")
 	if err != nil {
-		return nil, fmt.Errorf("error in Identifier: %w", err)
+		return nil, fmt.Errorf("failed to parse Identifier(String, Number): %w", err)
 	}
 
 	return &Node{
@@ -208,6 +213,7 @@ func (p *Parser) Identifier() (*Node, error) {
 	}, nil
 }
 
+// isLiteral checks if the token type is a literal.
 func (p *Parser) isLiteral(tokenType string) bool {
 	return tokenType == "NUMBER" ||
 		tokenType == "STRING" ||
@@ -216,9 +222,10 @@ func (p *Parser) isLiteral(tokenType string) bool {
 		tokenType == "null"
 }
 
+// Literal processes literal values.
 func (p *Parser) Literal() (*Node, error) {
 	if p.lookahead == nil {
-		return nil, fmt.Errorf("nil lookahead in Literal")
+		return nil, fmt.Errorf("unexpected end of input in Literal(String, Number)")
 	}
 
 	switch p.lookahead.Type {
@@ -233,14 +240,15 @@ func (p *Parser) Literal() (*Node, error) {
 	case "null":
 		return p.NullLiteral()
 	default:
-		return nil, fmt.Errorf("unexpected literal type %s", p.lookahead.Type)
+		return nil, fmt.Errorf("unexpected literal type '%s' encountered", p.lookahead.Type)
 	}
 }
 
+// NumericLiteral processes number literals.
 func (p *Parser) NumericLiteral() (*Node, error) {
 	token, err := p.eat("NUMBER")
 	if err != nil {
-		return nil, fmt.Errorf("error in NumericLiteral: %w", err)
+		return nil, fmt.Errorf("failed to parse NumericLiteral: %w", err)
 	}
 
 	return &Node{
@@ -249,10 +257,11 @@ func (p *Parser) NumericLiteral() (*Node, error) {
 	}, nil
 }
 
+// StringLiteral processes string literals.
 func (p *Parser) StringLiteral() (*Node, error) {
 	token, err := p.eat("STRING")
 	if err != nil {
-		return nil, fmt.Errorf("error in StringLiteral: %w", err)
+		return nil, fmt.Errorf("failed to parse StringLiteral: %w", err)
 	}
 
 	return &Node{
@@ -261,10 +270,11 @@ func (p *Parser) StringLiteral() (*Node, error) {
 	}, nil
 }
 
+// BooleanLiteral processes boolean literals.
 func (p *Parser) BooleanLiteral(value string) (*Node, error) {
 	token, err := p.eat(value)
 	if err != nil {
-		return nil, fmt.Errorf("error in BooleanLiteral: %w", err)
+		return nil, fmt.Errorf("failed to parse BooleanLiteral for value '%s': %w", value, err)
 	}
 
 	return &Node{
@@ -273,10 +283,11 @@ func (p *Parser) BooleanLiteral(value string) (*Node, error) {
 	}, nil
 }
 
+// NullLiteral processes null literals.
 func (p *Parser) NullLiteral() (*Node, error) {
 	_, err := p.eat("null")
 	if err != nil {
-		return nil, fmt.Errorf("error in NullLiteral: %w", err)
+		return nil, fmt.Errorf("failed to parse NullLiteral: %w", err)
 	}
 
 	return &Node{
@@ -293,7 +304,7 @@ func (p *Parser) eat(tokenType string) (*Token, error) {
 	}
 
 	if token.Type != tokenType {
-		return nil, fmt.Errorf("unexpected token: %s, expected: %s", token.Value, tokenType)
+		return nil, fmt.Errorf("unexpected token: '%s', expected: '%s'", token.Value, tokenType)
 	}
 
 	// Move to the next token.
