@@ -63,7 +63,7 @@ func CreateRuleHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// API to combine rules
+// API to combine rules and store the result in the database
 func CombineRulesHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Rules []string `json:"rules"`
@@ -80,15 +80,36 @@ func CombineRulesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Serialize the combined AST node to JSON and send it as a response
-	response, err := json.Marshal(combinedAST)
+	// Convert combined AST to JSON format
+	astJSON, err := json.Marshal(combinedAST)
 	if err != nil {
 		http.Error(w, "Error marshaling combined AST to JSON", http.StatusInternalServerError)
 		return
 	}
+
+	// Create the combined rule string (concatenating the rules)
+	combinedRuleString := req.Rules[0]
+	for _, rule := range req.Rules[1:] {
+		combinedRuleString += " OR " + rule
+	}
+
+	// Insert the combined rule and the AST into the database
+	query := `INSERT INTO rules (rule_string, ast) VALUES ($1, $2) RETURNING id`
+	var ruleID int
+	err = db.DB.QueryRow(query, combinedRuleString, astJSON).Scan(&ruleID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error storing combined rule: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Return success response with the rule ID and the combined rule
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(response)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message":       "Combined rule created successfully",
+		"rule_id":       ruleID,
+		"combined_rule": combinedRuleString,
+		"combined_ast":  combinedAST,
+	})
 }
 
 // API to evaluate a rule
