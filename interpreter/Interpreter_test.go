@@ -1,4 +1,4 @@
-package main
+package interpreter
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ func runTestRule(t *testing.T, rule string, context Context, expected bool) {
 
 	ast := p.ParseRule()
 
-	result := interpret(ast, context)
+	result := Interpret(ast, context)
 
 	if result != expected {
 		t.Errorf("Rule: %s\nContext: %v\nExpected: %v, but got: %v\n", rule, context, expected, result)
