@@ -1,4 +1,4 @@
-CREATE TABLE rules (
+CREATE TABLE IF NOT EXISTS rules (
     id SERIAL PRIMARY KEY,
     rule_string TEXT NOT NULL,
     ast JSONB NOT NULL,
