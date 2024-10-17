@@ -1,11 +1,11 @@
-package interpreter
+package Test
 
 import (
 	"fmt"
 	"testing"
 	"time"
 
-	"github.com/yash7xm/Rule_Engine_with_AST/internal/interpreter" // Importing interpreter
+	"github.com/yash7xm/Rule_Engine_with_AST/internal/interpreter"
 	"github.com/yash7xm/Rule_Engine_with_AST/internal/parser"
 )
 
