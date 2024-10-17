@@ -61,6 +61,21 @@ func evaluateBinaryExpression(node *parser.Node, context Context) bool {
 		leftNum, leftOk := toNumber(leftValue)
 		rightNum, rightOk := toNumber(rightValue)
 		return leftOk && rightOk && leftNum < rightNum
+	case ">=":
+		// Handle greater than or equal to comparison
+		leftNum, leftOk := toNumber(leftValue)
+		rightNum, rightOk := toNumber(rightValue)
+		return leftOk && rightOk && leftNum >= rightNum
+	case "<=":
+		// Handle less than or equal to comparison
+		leftNum, leftOk := toNumber(leftValue)
+		rightNum, rightOk := toNumber(rightValue)
+		return leftOk && rightOk && leftNum <= rightNum
+	case "!=":
+		// Handle not equal to comparison
+		leftNum, leftOk := toNumber(leftValue)
+		rightNum, rightOk := toNumber(rightValue)
+		return leftOk && rightOk && leftNum != rightNum
 	default:
 		fmt.Printf("Unknown operator: %s\n", node.Value)
 		return false
