@@ -25,29 +25,43 @@ func NewParser(tokenizer *Tokenizer) *Parser {
 	}
 }
 
-// ParseRule parses the entire rule and returns the AST.
-func (p *Parser) ParseRule() *Node {
+// ParseRule parses the entire rule and returns the AST or an error.
+func (p *Parser) ParseRule() (*Node, error) {
 	p.lookahead = p.tokenizer.GetNextToken()
 
 	// Handle the case where the input is empty
 	if p.lookahead == nil {
-		fmt.Println("Empty input, returning nil")
-		return nil
+		return nil, fmt.Errorf("empty input, unable to parse rule")
 	}
 
-	return p.Construct()
+	ast, err := p.Construct()
+	if err != nil {
+		return nil, err
+	}
+
+	return ast, nil
 }
 
-func (p *Parser) Construct() *Node {
+func (p *Parser) Construct() (*Node, error) {
 	return p.LogicalOrExpression()
 }
 
-func (p *Parser) LogicalOrExpression() *Node {
-	left := p.LogicalAndExpression()
+func (p *Parser) LogicalOrExpression() (*Node, error) {
+	left, err := p.LogicalAndExpression()
+	if err != nil {
+		return nil, err
+	}
 
 	for p.lookahead != nil && p.lookahead.Type == "LOGICAL_OR" {
-		operator, _ := p.eat("LOGICAL_OR")
-		right := p.LogicalAndExpression()
+		operator, err := p.eat("LOGICAL_OR")
+		if err != nil {
+			return nil, err
+		}
+
+		right, err := p.LogicalAndExpression()
+		if err != nil {
+			return nil, err
+		}
 
 		left = &Node{
 			Type:  "LogicalOrExpression",
@@ -57,15 +71,25 @@ func (p *Parser) LogicalOrExpression() *Node {
 		}
 	}
 
-	return left
+	return left, nil
 }
 
-func (p *Parser) LogicalAndExpression() *Node {
-	left := p.EqualityExpression()
+func (p *Parser) LogicalAndExpression() (*Node, error) {
+	left, err := p.EqualityExpression()
+	if err != nil {
+		return nil, err
+	}
 
 	for p.lookahead != nil && p.lookahead.Type == "LOGICAL_AND" {
-		operator, _ := p.eat("LOGICAL_AND")
-		right := p.EqualityExpression()
+		operator, err := p.eat("LOGICAL_AND")
+		if err != nil {
+			return nil, err
+		}
+
+		right, err := p.EqualityExpression()
+		if err != nil {
+			return nil, err
+		}
 
 		left = &Node{
 			Type:  "LogicalAndExpression",
@@ -75,15 +99,25 @@ func (p *Parser) LogicalAndExpression() *Node {
 		}
 	}
 
-	return left
+	return left, nil
 }
 
-func (p *Parser) EqualityExpression() *Node {
-	left := p.RelationalExpression()
+func (p *Parser) EqualityExpression() (*Node, error) {
+	left, err := p.RelationalExpression()
+	if err != nil {
+		return nil, err
+	}
 
 	for p.lookahead != nil && p.lookahead.Type == "EQUALITY_OPERATOR" {
-		operator, _ := p.eat("EQUALITY_OPERATOR")
-		right := p.RelationalExpression()
+		operator, err := p.eat("EQUALITY_OPERATOR")
+		if err != nil {
+			return nil, err
+		}
+
+		right, err := p.RelationalExpression()
+		if err != nil {
+			return nil, err
+		}
 
 		left = &Node{
 			Type:  "BinaryExpression",
@@ -93,15 +127,25 @@ func (p *Parser) EqualityExpression() *Node {
 		}
 	}
 
-	return left
+	return left, nil
 }
 
-func (p *Parser) RelationalExpression() *Node {
-	left := p.PrimaryExpression()
+func (p *Parser) RelationalExpression() (*Node, error) {
+	left, err := p.PrimaryExpression()
+	if err != nil {
+		return nil, err
+	}
 
 	for p.lookahead != nil && p.lookahead.Type == "RELATIONAL_OPERATOR" {
-		operator, _ := p.eat("RELATIONAL_OPERATOR")
-		right := p.PrimaryExpression()
+		operator, err := p.eat("RELATIONAL_OPERATOR")
+		if err != nil {
+			return nil, err
+		}
+
+		right, err := p.PrimaryExpression()
+		if err != nil {
+			return nil, err
+		}
 
 		left = &Node{
 			Type:  "BinaryExpression",
@@ -111,13 +155,12 @@ func (p *Parser) RelationalExpression() *Node {
 		}
 	}
 
-	return left
+	return left, nil
 }
 
-func (p *Parser) PrimaryExpression() *Node {
+func (p *Parser) PrimaryExpression() (*Node, error) {
 	if p.lookahead == nil {
-		fmt.Println("PrimaryExpression: unexpected nil lookahead")
-		return nil
+		return nil, fmt.Errorf("unexpected nil lookahead in PrimaryExpression")
 	}
 
 	if p.isLiteral(p.lookahead.Type) {
@@ -130,40 +173,39 @@ func (p *Parser) PrimaryExpression() *Node {
 	case "(":
 		return p.ParenthesizedExpression()
 	default:
-		fmt.Printf("PrimaryExpression: unexpected token %s\n", p.lookahead.Type)
-		return nil
+		return nil, fmt.Errorf("unexpected token %s in PrimaryExpression", p.lookahead.Type)
 	}
 }
 
-func (p *Parser) ParenthesizedExpression() *Node {
+func (p *Parser) ParenthesizedExpression() (*Node, error) {
 	_, err := p.eat("(")
 	if err != nil {
-		fmt.Println("Error in ParenthesizedExpression: ", err)
-		return nil
+		return nil, fmt.Errorf("error in ParenthesizedExpression: %w", err)
 	}
 
-	exp := p.LogicalOrExpression()
+	exp, err := p.LogicalOrExpression()
+	if err != nil {
+		return nil, err
+	}
 
 	_, err = p.eat(")")
 	if err != nil {
-		fmt.Println("Error in ParenthesizedExpression: ", err)
-		return nil
+		return nil, fmt.Errorf("error in ParenthesizedExpression: %w", err)
 	}
 
-	return exp
+	return exp, nil
 }
 
-func (p *Parser) Identifier() *Node {
+func (p *Parser) Identifier() (*Node, error) {
 	name, err := p.eat("IDENTIFIER")
 	if err != nil {
-		fmt.Println("Error in Identifier: ", err)
-		return nil
+		return nil, fmt.Errorf("error in Identifier: %w", err)
 	}
 
 	return &Node{
 		Type:  "Identifier",
 		Value: name.Value,
-	}
+	}, nil
 }
 
 func (p *Parser) isLiteral(tokenType string) bool {
@@ -174,10 +216,9 @@ func (p *Parser) isLiteral(tokenType string) bool {
 		tokenType == "null"
 }
 
-func (p *Parser) Literal() *Node {
+func (p *Parser) Literal() (*Node, error) {
 	if p.lookahead == nil {
-		fmt.Println("Literal: nil lookahead")
-		return nil
+		return nil, fmt.Errorf("nil lookahead in Literal")
 	}
 
 	switch p.lookahead.Type {
@@ -192,61 +233,56 @@ func (p *Parser) Literal() *Node {
 	case "null":
 		return p.NullLiteral()
 	default:
-		fmt.Println("Literal: unexpected literal type.")
-		return nil
+		return nil, fmt.Errorf("unexpected literal type %s", p.lookahead.Type)
 	}
 }
 
-func (p *Parser) NumericLiteral() *Node {
+func (p *Parser) NumericLiteral() (*Node, error) {
 	token, err := p.eat("NUMBER")
 	if err != nil {
-		fmt.Println("Error in NumericLiteral: ", err)
-		return nil
+		return nil, fmt.Errorf("error in NumericLiteral: %w", err)
 	}
 
 	return &Node{
 		Type:  "NumericLiteral",
 		Value: token.Value,
-	}
+	}, nil
 }
 
-func (p *Parser) StringLiteral() *Node {
+func (p *Parser) StringLiteral() (*Node, error) {
 	token, err := p.eat("STRING")
 	if err != nil {
-		fmt.Println("Error in StringLiteral: ", err)
-		return nil
+		return nil, fmt.Errorf("error in StringLiteral: %w", err)
 	}
 
 	return &Node{
 		Type:  "StringLiteral",
 		Value: token.Value,
-	}
+	}, nil
 }
 
-func (p *Parser) BooleanLiteral(value string) *Node {
+func (p *Parser) BooleanLiteral(value string) (*Node, error) {
 	token, err := p.eat(value)
 	if err != nil {
-		fmt.Println("Error in BooleanLiteral: ", err)
-		return nil
+		return nil, fmt.Errorf("error in BooleanLiteral: %w", err)
 	}
 
 	return &Node{
 		Type:  "BooleanLiteral",
 		Value: token.Value,
-	}
+	}, nil
 }
 
-func (p *Parser) NullLiteral() *Node {
+func (p *Parser) NullLiteral() (*Node, error) {
 	_, err := p.eat("null")
 	if err != nil {
-		fmt.Println("Error in NullLiteral: ", err)
-		return nil
+		return nil, fmt.Errorf("error in NullLiteral: %w", err)
 	}
 
 	return &Node{
 		Type:  "NullLiteral",
 		Value: "null",
-	}
+	}, nil
 }
 
 // eat consumes the current token if it matches the expected type and returns it.
