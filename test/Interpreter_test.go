@@ -82,6 +82,7 @@ func TestEdgeCases(t *testing.T) {
 		{"salary > 50000", Context{"age": 40}, false},
 		{"age > 30", Context{"age": "invalid_value"}, false},
 		{"salary = 'abc'", Context{"salary": 123}, false},
+		{"salary = 100", Context{"salary": 100}, true},
 	}
 
 	for _, test := range tests {

@@ -91,24 +91,32 @@ func TestCombineRulesHandler(t *testing.T) {
 
 // Test for evaluateRuleHandler
 func TestEvaluateRuleHandler(t *testing.T) {
-	// Mock request data
+	// Mock request data, representing AST as a JSON-like map structure
 	reqBody := map[string]interface{}{
 		"ast": map[string]interface{}{
-			"Type":  "BinaryExpression",
-			"Left":  map[string]interface{}{"Type": "Identifier", "Value": "a"},
-			"Right": map[string]interface{}{"Type": "NumericLiteral", "Value": "1"},
-			"Value": ">",
+			"Type": "BinaryExpression",
+			"Left": map[string]interface{}{
+				"Type":  "Identifier",
+				"Value": "a",
+			},
+			"Right": map[string]interface{}{
+				"Type":  "StringLiteral",
+				"Value": "1",
+			},
+			"Value": "=",
 		},
-		"data": map[string]interface{}{"a": "10"},
+		"data": map[string]interface{}{
+			"a": "1",
+		},
 	}
 
-	// Create a new request
+	// Create a new request with the mocked request body
 	req := newJSONRequest(t, "POST", "/evaluate_rule", reqBody)
 
 	// Create a new response recorder
 	rr := httptest.NewRecorder()
 
-	// Call the handler
+	// Call the handler (adjust the handler call as per your routes)
 	handler := http.HandlerFunc(routes.EvaluateRuleHandler)
 	handler.ServeHTTP(rr, req)
 
