@@ -47,6 +47,10 @@ func evaluateBinaryExpression(node *parser.Node, context Context) bool {
 	leftValue := evaluateExpression(node.Left, context)
 	rightValue := evaluateExpression(node.Right, context)
 
+	if leftValue == nil || rightValue == nil {
+		return false
+	}
+
 	switch node.Value {
 	case "=":
 		// Handle equality comparison
@@ -73,9 +77,7 @@ func evaluateBinaryExpression(node *parser.Node, context Context) bool {
 		return leftOk && rightOk && leftNum <= rightNum
 	case "!=":
 		// Handle not equal to comparison
-		leftNum, leftOk := toNumber(leftValue)
-		rightNum, rightOk := toNumber(rightValue)
-		return leftOk && rightOk && leftNum != rightNum
+		return leftValue != rightValue
 	default:
 		fmt.Printf("Unknown operator: %s\n", node.Value)
 		return false
@@ -90,7 +92,10 @@ func evaluateExpression(node *parser.Node, context Context) interface{} {
 		return context[node.Value]
 	case "NumericLiteral":
 		// Convert string numeric literals to a number
-		num, _ := strconv.Atoi(node.Value)
+		num, err := strconv.Atoi(node.Value)
+		if err != nil {
+			return nil
+		}
 		return num
 	case "StringLiteral":
 		// Strip quotes from string literals

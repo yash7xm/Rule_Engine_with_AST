@@ -27,7 +27,14 @@ func NewParser(tokenizer *Tokenizer) *Parser {
 
 // ParseRule parses the entire rule and returns the AST.
 func (p *Parser) ParseRule() *Node {
-	p.lookahead = p.tokenizer.GetNextToken() // Initialize the first token.
+	p.lookahead = p.tokenizer.GetNextToken()
+
+	// Handle the case where the input is empty
+	if p.lookahead == nil {
+		fmt.Println("Empty input, returning nil")
+		return nil
+	}
+
 	return p.Construct()
 }
 
@@ -108,6 +115,11 @@ func (p *Parser) RelationalExpression() *Node {
 }
 
 func (p *Parser) PrimaryExpression() *Node {
+	if p.lookahead == nil {
+		fmt.Println("PrimaryExpression: unexpected nil lookahead")
+		return nil
+	}
+
 	if p.isLiteral(p.lookahead.Type) {
 		return p.Literal()
 	}
@@ -124,14 +136,30 @@ func (p *Parser) PrimaryExpression() *Node {
 }
 
 func (p *Parser) ParenthesizedExpression() *Node {
-	p.eat("(") // Consume '('
+	_, err := p.eat("(")
+	if err != nil {
+		fmt.Println("Error in ParenthesizedExpression: ", err)
+		return nil
+	}
+
 	exp := p.LogicalOrExpression()
-	p.eat(")") // Consume ')'
+
+	_, err = p.eat(")")
+	if err != nil {
+		fmt.Println("Error in ParenthesizedExpression: ", err)
+		return nil
+	}
+
 	return exp
 }
 
 func (p *Parser) Identifier() *Node {
-	name, _ := p.eat("IDENTIFIER")
+	name, err := p.eat("IDENTIFIER")
+	if err != nil {
+		fmt.Println("Error in Identifier: ", err)
+		return nil
+	}
+
 	return &Node{
 		Type:  "Identifier",
 		Value: name.Value,
@@ -147,6 +175,11 @@ func (p *Parser) isLiteral(tokenType string) bool {
 }
 
 func (p *Parser) Literal() *Node {
+	if p.lookahead == nil {
+		fmt.Println("Literal: nil lookahead")
+		return nil
+	}
+
 	switch p.lookahead.Type {
 	case "NUMBER":
 		return p.NumericLiteral()
@@ -159,13 +192,18 @@ func (p *Parser) Literal() *Node {
 	case "null":
 		return p.NullLiteral()
 	default:
-		fmt.Println("Literal: unexpected literal production.")
+		fmt.Println("Literal: unexpected literal type.")
 		return nil
 	}
 }
 
 func (p *Parser) NumericLiteral() *Node {
-	token, _ := p.eat("NUMBER")
+	token, err := p.eat("NUMBER")
+	if err != nil {
+		fmt.Println("Error in NumericLiteral: ", err)
+		return nil
+	}
+
 	return &Node{
 		Type:  "NumericLiteral",
 		Value: token.Value,
@@ -173,7 +211,12 @@ func (p *Parser) NumericLiteral() *Node {
 }
 
 func (p *Parser) StringLiteral() *Node {
-	token, _ := p.eat("STRING")
+	token, err := p.eat("STRING")
+	if err != nil {
+		fmt.Println("Error in StringLiteral: ", err)
+		return nil
+	}
+
 	return &Node{
 		Type:  "StringLiteral",
 		Value: token.Value,
@@ -181,7 +224,12 @@ func (p *Parser) StringLiteral() *Node {
 }
 
 func (p *Parser) BooleanLiteral(value string) *Node {
-	token, _ := p.eat(value)
+	token, err := p.eat(value)
+	if err != nil {
+		fmt.Println("Error in BooleanLiteral: ", err)
+		return nil
+	}
+
 	return &Node{
 		Type:  "BooleanLiteral",
 		Value: token.Value,
@@ -189,7 +237,12 @@ func (p *Parser) BooleanLiteral(value string) *Node {
 }
 
 func (p *Parser) NullLiteral() *Node {
-	p.eat("null")
+	_, err := p.eat("null")
+	if err != nil {
+		fmt.Println("Error in NullLiteral: ", err)
+		return nil
+	}
+
 	return &Node{
 		Type:  "NullLiteral",
 		Value: "null",
