@@ -7,6 +7,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/yash7xm/Rule_Engine_with_AST/cmd/routes"
+	db "github.com/yash7xm/Rule_Engine_with_AST/internal/database"
 )
 
 func main() {
@@ -15,6 +16,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error loading .env file")
 	}
+
+	db.InitDB()
 
 	// Set up the server with routes
 	router := routes.NewRouter()
