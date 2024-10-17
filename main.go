@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/yash7xm/Rule_Engine_with_AST/parser"
 	"strconv"
 	"strings"
+
+	"github.com/yash7xm/Rule_Engine_with_AST/parser"
 )
 
 // Context is a map to hold input values to be evaluated against the rule.
@@ -28,7 +29,8 @@ func interpret(node *parser.Node, context Context) bool {
 		return evaluateBinaryExpression(node, context)
 	case "Identifier":
 		// Lookup identifier value from the context
-		return context[node.Value] != nil
+		value := context[node.Value]
+		return value != nil
 	case "NumericLiteral":
 		// Numeric literals will just return their value
 		return context[node.Value] != nil
@@ -44,8 +46,14 @@ func interpret(node *parser.Node, context Context) bool {
 
 // Helper function to evaluate binary expressions like =, >, <, <=, >= etc.
 func evaluateBinaryExpression(node *parser.Node, context Context) bool {
-	leftValue := evaluateExpression(node.Left, context)
-	rightValue := evaluateExpression(node.Right, context)
+	var leftValue, rightValue interface{}
+	if node.Left != nil {
+		leftValue = evaluateExpression(node.Left, context)
+	}
+
+	if node.Right != nil {
+		rightValue = evaluateExpression(node.Right, context)
+	}
 
 	if leftValue == nil || rightValue == nil {
 		return false
@@ -94,6 +102,7 @@ func evaluateExpression(node *parser.Node, context Context) interface{} {
 		// Convert string numeric literals to a number
 		num, err := strconv.Atoi(node.Value)
 		if err != nil {
+			fmt.Printf("Error converting NumericLiteral '%s' to int: %v\n", node.Value, err)
 			return nil
 		}
 		return num
@@ -146,8 +155,9 @@ func printAST(node *parser.Node, depth int) {
 
 func main() {
 	// Define the rule
-	rule := "((age > 30 AND department = 'Sales') OR (age < 25 AND department = 'Marketing')) AND (salary > 50000 OR experience > 5)"
+	// rule := "((age > 30 AND department = 'Sales') OR (age < 25 AND department = 'Marketing')) AND (salary > 50000 OR experience > 5)"
 
+	rule := "age > "
 	// Tokenizer and parser for the rule
 	tokenizer := parser.NewTokenizer(rule)
 	p := parser.NewParser(tokenizer)

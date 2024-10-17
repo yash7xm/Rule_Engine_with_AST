@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/yash7xm/Rule_Engine_with_AST/parser"
 )
@@ -11,6 +12,7 @@ import (
 func runTestRule(t *testing.T, rule string, context Context, expected bool) {
 	tokenizer := parser.NewTokenizer(rule)
 	p := parser.NewParser(tokenizer)
+
 	ast := p.ParseRule()
 
 	result := interpret(ast, context)
@@ -87,6 +89,31 @@ func TestPerformance(t *testing.T) {
 
 	rule := "(key500 > 250 AND key999 < 1000) OR key100 = 100"
 	runTestRule(t, rule, largeContext, true)
+}
+
+// Performance test for large rule and context data
+func TestLargeRuleAndContextPerformance(t *testing.T) {
+	largeContext := Context{}
+	// Create large context with 1000 entries
+	for i := 1; i <= 1000; i++ {
+		largeContext[fmt.Sprintf("key%d", i)] = i
+	}
+
+	// Construct a large rule
+	// This rule checks multiple keys in the context
+	// For simplicity, we'll create a rule that checks if key1 to key10 are greater than 0
+	largeRule := "key1 > 0 AND key2 > 0 AND key3 > 0 AND key4 > 0 AND key5 > 0 " +
+		"AND key6 > 0 AND key7 > 0 AND key8 > 0 AND key9 > 0 AND key10 > 0"
+
+	// Start measuring time
+	start := time.Now()
+
+	// Run the test with the large rule and context
+	runTestRule(t, largeRule, largeContext, true)
+
+	// Log the time taken for the performance test
+	elapsed := time.Since(start)
+	fmt.Printf("Performance test for large rule and context took: %s\n", elapsed)
 }
 
 // Test error handling and invalid inputs
