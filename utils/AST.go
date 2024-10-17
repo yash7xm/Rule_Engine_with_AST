@@ -31,3 +31,78 @@ func PrintAST(node *parser.Node, depth int) {
 		PrintAST(node.Right, depth+1)
 	}
 }
+
+func ConvertToASTNode(astJSON map[string]interface{}) (*parser.Node, error) {
+	nodeType := astJSON["Type"].(string)
+
+	switch nodeType {
+	case "LogicalOrExpression":
+		left, err := ConvertToASTNode(astJSON["Left"].(map[string]interface{}))
+		if err != nil {
+			return nil, err
+		}
+		right, err := ConvertToASTNode(astJSON["Right"].(map[string]interface{}))
+		if err != nil {
+			return nil, err
+		}
+		return &parser.Node{
+			Type:  nodeType,
+			Value: astJSON["Value"].(string),
+			Left:  left,
+			Right: right,
+		}, nil
+
+	case "LogicalAndExpression":
+		left, err := ConvertToASTNode(astJSON["Left"].(map[string]interface{}))
+		if err != nil {
+			return nil, err
+		}
+		right, err := ConvertToASTNode(astJSON["Right"].(map[string]interface{}))
+		if err != nil {
+			return nil, err
+		}
+		return &parser.Node{
+			Type:  nodeType,
+			Value: astJSON["Value"].(string),
+			Left:  left,
+			Right: right,
+		}, nil
+
+	case "BinaryExpression":
+		left, err := ConvertToASTNode(astJSON["Left"].(map[string]interface{}))
+		if err != nil {
+			return nil, err
+		}
+		right, err := ConvertToASTNode(astJSON["Right"].(map[string]interface{}))
+		if err != nil {
+			return nil, err
+		}
+		return &parser.Node{
+			Type:  nodeType,
+			Value: astJSON["Value"].(string),
+			Left:  left,
+			Right: right,
+		}, nil
+
+	case "Identifier":
+		return &parser.Node{
+			Type:  nodeType,
+			Value: astJSON["Value"].(string),
+		}, nil
+
+	case "NumericLiteral":
+		return &parser.Node{
+			Type:  nodeType,
+			Value: astJSON["Value"].(string),
+		}, nil
+
+	case "StringLiteral":
+		return &parser.Node{
+			Type:  nodeType,
+			Value: astJSON["Value"].(string),
+		}, nil
+
+	default:
+		return nil, fmt.Errorf("unknown node type: %s", nodeType)
+	}
+}
