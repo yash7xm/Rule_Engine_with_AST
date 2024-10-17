@@ -13,14 +13,14 @@ import (
 // NewRouter creates a new HTTP router and registers routes.
 func NewRouter() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/create_rule", createRuleHandler)
-	mux.HandleFunc("/combine_rules", combineRulesHandler)
-	mux.HandleFunc("/evaluate_rule", evaluateRuleHandler)
+	mux.HandleFunc("/create_rule", CreateRuleHandler)
+	mux.HandleFunc("/combine_rules", CombineRulesHandler)
+	mux.HandleFunc("/evaluate_rule", EvaluateRuleHandler)
 	return mux
 }
 
 // API to create a rule
-func createRuleHandler(w http.ResponseWriter, r *http.Request) {
+func CreateRuleHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		RuleString string `json:"rule_string"`
 	}
@@ -48,7 +48,7 @@ func createRuleHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // API to combine rules
-func combineRulesHandler(w http.ResponseWriter, r *http.Request) {
+func CombineRulesHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Rules []string `json:"rules"`
 	}
@@ -76,7 +76,7 @@ func combineRulesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // API to evaluate a rule
-func evaluateRuleHandler(w http.ResponseWriter, r *http.Request) {
+func EvaluateRuleHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		AST  map[string]interface{} `json:"ast"`
 		Data map[string]interface{} `json:"data"`
