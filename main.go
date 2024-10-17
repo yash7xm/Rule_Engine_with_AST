@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/yash7xm/Rule_Engine_with_AST/interpreter"
 	"github.com/yash7xm/Rule_Engine_with_AST/parser"
+	"github.com/yash7xm/Rule_Engine_with_AST/utils"
 )
 
 // API to create a rule
@@ -26,7 +28,11 @@ func createRuleHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Serialize the AST parser.Node to JSON and send it as a response
-	response, _ := json.Marshal(ast)
+	response, err := json.Marshal(ast)
+	if err != nil {
+		http.Error(w, "Error marshaling AST to JSON", http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(response)
@@ -50,16 +56,55 @@ func combineRulesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Serialize the combined AST node to JSON and send it as a response
-	response, _ := json.Marshal(combinedAST)
+	response, err := json.Marshal(combinedAST)
+	if err != nil {
+		http.Error(w, "Error marshaling combined AST to JSON", http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(response)
+}
+
+// API to evaluate a rule
+func evaluateRuleHandler(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		AST  map[string]interface{} `json:"ast"`
+		Data map[string]interface{} `json:"data"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// Convert the incoming AST JSON to your internal AST structure
+	ast, err := utils.ConvertToASTNode(req.AST)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error converting AST: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	// Assume evaluateAST is your function that evaluates the AST against the provided data
+	result := evaluateAST(ast, req.Data)
+
+	// Send the result as a response
+	response := map[string]interface{}{"result": result, "ast": ast}
+	responseData, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, "Error marshaling result to JSON", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(responseData)
 }
 
 // Start the HTTP server
 func main() {
 	http.HandleFunc("/create_rule", createRuleHandler)
 	http.HandleFunc("/combine_rules", combineRulesHandler)
+	http.HandleFunc("/evaluate_rule", evaluateRuleHandler)
 
 	port := ":8080"
 	fmt.Printf("Server is running on port %s...\n", port)
@@ -98,4 +143,17 @@ func combineAST(rules []string) (*parser.Node, error) {
 	}
 
 	return ast, nil
+}
+
+// evaluateAST evaluates the given AST node using the provided context.
+func evaluateAST(ast *parser.Node, data map[string]interface{}) bool {
+	context := interpreter.Context(data)
+	result := interpreter.Interpret(ast, context)
+
+	utils.PrintAST(ast, 0)
+	fmt.Println(context)
+
+	fmt.Println(result)
+
+	return result
 }
