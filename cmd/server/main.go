@@ -43,11 +43,15 @@ func main() {
 	stopChan := make(chan os.Signal, 1)
 	signal.Notify(stopChan, syscall.SIGINT, syscall.SIGTERM)
 
-	port := ":8080"
+	// Use the PORT environment variable
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // Default port if PORT is not set (for local development)
+	}
 	fmt.Printf("Server is running on port %s...\n", port)
 
 	go func() {
-		if err := http.ListenAndServe(port, handler); err != nil {
+		if err := http.ListenAndServe(":"+port, handler); err != nil {
 			log.Fatalf("Error starting server: %s\n", err)
 		}
 	}()
