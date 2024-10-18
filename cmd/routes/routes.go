@@ -55,12 +55,10 @@ func CreateRuleHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println(ast)
-
 	// Prepare response data
 	responseData := map[string]interface{}{
 		"rule_id": ruleID,
-		"Node":    ast,
+		"node":    ast,
 	}
 
 	// Send success response
@@ -112,7 +110,7 @@ func CombineRulesHandler(w http.ResponseWriter, r *http.Request) {
 	responseData := map[string]interface{}{
 		"rule_id":       ruleID,
 		"combined_rule": combinedRuleString,
-		"combined_ast":  combinedAST,
+		"node":  combinedAST,
 	}
 
 	// Send success response
