@@ -28,21 +28,21 @@ func CreateRuleHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Decode the incoming request JSON body
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		SendErrorResponse(w, http.StatusBadRequest, "Invalid request payload", err)
 		return
 	}
 
 	// Create AST (Abstract Syntax Tree) from the rule string
 	ast, err := createAST(req.RuleString)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error creating AST: %s", err), http.StatusBadRequest)
+		SendErrorResponse(w, http.StatusBadRequest, "Error creating AST", err)
 		return
 	}
 
 	// Convert AST to JSON format to store in the database
 	astJSON, err := json.Marshal(ast)
 	if err != nil {
-		http.Error(w, "Error marshaling AST to JSON", http.StatusInternalServerError)
+		SendErrorResponse(w, http.StatusInternalServerError, "Error marshaling AST to JSON", err)
 		return
 	}
 
@@ -51,39 +51,45 @@ func CreateRuleHandler(w http.ResponseWriter, r *http.Request) {
 	var ruleID int
 	err = db.DB.QueryRow(query, req.RuleString, astJSON).Scan(&ruleID)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error storing rule: %s", err), http.StatusInternalServerError)
+		SendErrorResponse(w, http.StatusInternalServerError, "Error storing rule", err)
 		return
 	}
 
-	// Return success response with the rule ID
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"message": "Rule created successfully",
+	fmt.Println(ast)
+
+	// Prepare response data
+	responseData := map[string]interface{}{
 		"rule_id": ruleID,
-	})
+		"Node":    ast,
+	}
+
+	// Send success response
+	SendSuccessResponse(w, http.StatusOK, "Rule created successfully", responseData)
 }
 
-// API to combine rules and store the result in the database
+// CombineRulesHandler combines multiple rules into one and stores the result in the database.
 func CombineRulesHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Rules []string `json:"rules"`
 	}
+
+	// Decode the request
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		SendErrorResponse(w, http.StatusBadRequest, "Invalid request payload", err)
 		return
 	}
 
 	// Use combineAST to combine rules into a single AST
 	combinedAST, err := combineAST(req.Rules)
 	if err != nil {
-		http.Error(w, "Error combining rules: "+err.Error(), http.StatusInternalServerError)
+		SendErrorResponse(w, http.StatusInternalServerError, "Error combining rules", err)
 		return
 	}
 
 	// Convert combined AST to JSON format
 	astJSON, err := json.Marshal(combinedAST)
 	if err != nil {
-		http.Error(w, "Error marshaling combined AST to JSON", http.StatusInternalServerError)
+		SendErrorResponse(w, http.StatusInternalServerError, "Error marshaling combined AST to JSON", err)
 		return
 	}
 
@@ -98,55 +104,56 @@ func CombineRulesHandler(w http.ResponseWriter, r *http.Request) {
 	var ruleID int
 	err = db.DB.QueryRow(query, combinedRuleString, astJSON).Scan(&ruleID)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error storing combined rule: %s", err), http.StatusInternalServerError)
+		SendErrorResponse(w, http.StatusInternalServerError, "Error storing combined rule", err)
 		return
 	}
 
-	// Return success response with the rule ID and the combined rule
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"message":       "Combined rule created successfully",
+	// Prepare response data
+	responseData := map[string]interface{}{
 		"rule_id":       ruleID,
 		"combined_rule": combinedRuleString,
 		"combined_ast":  combinedAST,
-	})
+	}
+
+	// Send success response
+	SendSuccessResponse(w, http.StatusOK, "Combined rule created successfully", responseData)
 }
 
-// API to evaluate a rule
+// EvaluateRuleHandler evaluates a rule's AST against provided data.
 func EvaluateRuleHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		AST  map[string]interface{} `json:"ast"`
 		Data map[string]interface{} `json:"data"`
 	}
 
+	// Decode the request
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		SendErrorResponse(w, http.StatusBadRequest, "Invalid request payload", err)
 		return
 	}
 
 	// Convert the incoming AST JSON to your internal AST structure
 	ast, err := utils.ConvertToASTNode(req.AST)
 	if err != nil {
-		http.Error(w, "Error converting AST: "+err.Error(), http.StatusBadRequest)
+		SendErrorResponse(w, http.StatusBadRequest, "Error converting AST", err)
 		return
 	}
 
-	// Assume evaluateAST is your function that evaluates the AST against the provided data
+	// Evaluate the AST with the provided data
 	result := evaluateAST(ast, req.Data)
 
-	// Send the result as a response
-	response := map[string]interface{}{"result": result, "ast": ast}
-	responseData, err := json.Marshal(response)
-	if err != nil {
-		http.Error(w, "Error marshaling result to JSON", http.StatusInternalServerError)
-		return
+	// Prepare response data
+	responseData := map[string]interface{}{
+		"result": result,
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(responseData)
+
+	// Send success response
+	SendSuccessResponse(w, http.StatusOK, "Rule evaluated successfully", responseData)
 }
 
 // Placeholder functions for AST operations
+
+// createAST creates an AST from a rule string.
 func createAST(rule string) (*parser.Node, error) {
 	tokenizer := parser.NewTokenizer(rule)
 	p := parser.NewParser(tokenizer)
@@ -182,6 +189,5 @@ func combineAST(rules []string) (*parser.Node, error) {
 func evaluateAST(ast *parser.Node, data map[string]interface{}) bool {
 	context := interpreter.Context(data)
 	result := interpreter.Interpret(ast, context)
-
 	return result
 }
