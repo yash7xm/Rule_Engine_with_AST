@@ -8,7 +8,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/joho/godotenv"
 	"github.com/rs/cors"
 	"github.com/yash7xm/Rule_Engine_with_AST/cmd/routes"
 	db "github.com/yash7xm/Rule_Engine_with_AST/internal/database"
@@ -16,10 +15,10 @@ import (
 
 func main() {
 	// Load environment variables from .env file
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalf("Error loading .env file")
-	}
+	// err := godotenv.Load()
+	// if err != nil {
+	// 	log.Fatalf("Error loading .env file")
+	// }
 
 	// Initialize the database connection
 	db.InitDB()
