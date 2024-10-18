@@ -1,6 +1,6 @@
 module github.com/yash7xm/Rule_Engine_with_AST
 
-go 1.23.2
+go 1.23.0
 
 require (
 	github.com/golang-migrate/migrate v3.5.4+incompatible
