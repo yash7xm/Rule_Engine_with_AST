@@ -3,12 +3,15 @@ package Test
 import (
 	"bytes"
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/joho/godotenv"
 	"github.com/yash7xm/Rule_Engine_with_AST/cmd/routes"
+	db "github.com/yash7xm/Rule_Engine_with_AST/internal/database"
 )
 
 // Helper function to create a new HTTP request with JSON body
@@ -27,6 +30,16 @@ func newJSONRequest(t *testing.T, method, url string, body interface{}) *http.Re
 
 // Test for createRuleHandler
 func TestCreateRuleHandler(t *testing.T) {
+	// Load environment variables from .env file
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+
+	// Initialize the database connection
+	db.InitDB()
+	defer db.DB.Close() // Close the DB connection when the application shuts down
+
 	// Mock request data
 	reqBody := map[string]string{"rule_string": "a = 1"}
 
@@ -47,14 +60,29 @@ func TestCreateRuleHandler(t *testing.T) {
 
 	// Check the response body for valid JSON
 	var response map[string]interface{}
-	err := json.NewDecoder(rr.Body).Decode(&response)
+	err = json.NewDecoder(rr.Body).Decode(&response)
 	if err != nil {
 		t.Errorf("Expected valid JSON response, got error: %v", err)
+	}
+
+	// Check if rule_id exists in the response
+	if _, ok := response["data"]; !ok {
+		t.Errorf("Expected rule_id in response, but got %v", response["data"])
 	}
 }
 
 // Test for combineRulesHandler
 func TestCombineRulesHandler(t *testing.T) {
+	// Load environment variables from .env file
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+
+	// Initialize the database connection
+	db.InitDB()
+	defer db.DB.Close() // Close the DB connection when the application shuts down
+
 	// Mock request data
 	reqBody := map[string]interface{}{
 		"rules": []string{"a = 1", "b = 2"},
@@ -77,21 +105,30 @@ func TestCombineRulesHandler(t *testing.T) {
 
 	// Check the response body for valid JSON
 	var response map[string]interface{}
-	err := json.NewDecoder(rr.Body).Decode(&response)
+	err = json.NewDecoder(rr.Body).Decode(&response)
 	if err != nil {
 		t.Errorf("Expected valid JSON response, got error: %v", err)
 	}
 
 	// Ensure the combined rule contains the expected "OR" operator
-	combinedRule, ok := response["Value"].(string)
+	combinedRule, ok := response["data"].(map[string]interface{})["combined_rule"].(string)
 	if !ok || !strings.Contains(combinedRule, "OR") {
-		t.Errorf("Expected combined rule with OR operator, got %v", combinedRule)
+		t.Errorf("Expected combined rule with OR operator, got %v", response)
 	}
 }
 
 // Test for evaluateRuleHandler
-// Test for EvaluateRuleHandler
 func TestEvaluateRuleHandler(t *testing.T) {
+	// Load environment variables from .env file
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+
+	// Initialize the database connection
+	db.InitDB()
+	defer db.DB.Close() // Close the DB connection when the application shuts down
+
 	// Mock request data, representing AST as a JSON-like map structure
 	reqBody := `{
 		"ast": {
@@ -121,8 +158,7 @@ func TestEvaluateRuleHandler(t *testing.T) {
 		  }
 		},
 		"data": { "age": 25, "status": "active" }
-	  }
-	  `
+	  }`
 
 	// Create a new request with the mocked request body
 	req := httptest.NewRequest("POST", "/evaluate_rule", strings.NewReader(reqBody))
@@ -142,13 +178,13 @@ func TestEvaluateRuleHandler(t *testing.T) {
 
 	// Check the response body for valid JSON
 	var response map[string]interface{}
-	err := json.NewDecoder(rr.Body).Decode(&response)
+	err = json.NewDecoder(rr.Body).Decode(&response)
 	if err != nil {
 		t.Errorf("Expected valid JSON response, got error: %v", err)
 	}
 
 	// Check if the result is true, which means the rule was evaluated correctly
-	if result, ok := response["result"].(bool); !ok || !result {
+	if result, ok := response["data"].(map[string]interface{})["result"].(bool); !ok || !result {
 		t.Errorf("Expected result true, got %v", response["result"])
 	}
 }
