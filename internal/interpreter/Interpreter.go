@@ -62,7 +62,12 @@ func evaluateBinaryExpression(node *parser.Node, context Context) bool {
 	switch node.Value {
 	case "=":
 		// Handle equality comparison
-		return leftValue == rightValue
+		equal, err := compareWithSameType(leftValue, rightValue)
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			return false
+		}
+		return equal
 	case ">":
 		// Handle greater than comparison
 		leftNum, leftOk := toNumber(leftValue)
@@ -114,13 +119,49 @@ func evaluateExpression(node *parser.Node, context Context) interface{} {
 	return nil
 }
 
-// Convert a value to a number if possible
-func toNumber(value interface{}) (int, bool) {
+// Helper function to compare two values by first trying to make them the same type
+func compareWithSameType(leftValue, rightValue interface{}) (bool, error) {
+	switch left := leftValue.(type) {
+	case int:
+		switch right := rightValue.(type) {
+		case int:
+			return left == right, nil
+		case float64:
+			// Convert int to float64 for comparison
+			return float64(left) == right, nil
+		default:
+			return false, fmt.Errorf("cannot convert right value '%v' of type %T to compare with int", rightValue, rightValue)
+		}
+	case float64:
+		switch right := rightValue.(type) {
+		case int:
+			// Convert int to float64 for comparison
+			return left == float64(right), nil
+		case float64:
+			return left == right, nil
+		default:
+			return false, fmt.Errorf("cannot convert right value '%v' of type %T to compare with float64", rightValue, rightValue)
+		}
+	case string:
+		right, ok := rightValue.(string)
+		if !ok {
+			return false, fmt.Errorf("cannot convert right value '%v' of type %T to string", rightValue, rightValue)
+		}
+		return left == right, nil
+	default:
+		return false, fmt.Errorf("unsupported types for comparison: %T and %T", leftValue, rightValue)
+	}
+}
+
+// Convert a value to a number if possible (handles both int and float64)
+func toNumber(value interface{}) (float64, bool) {
 	switch v := value.(type) {
 	case int:
+		return float64(v), true // Convert int to float64 for uniform comparison
+	case float64:
 		return v, true
 	case string:
-		num, err := strconv.Atoi(v)
+		num, err := strconv.ParseFloat(v, 64)
 		return num, err == nil
 	}
 
