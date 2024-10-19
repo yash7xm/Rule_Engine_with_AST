@@ -24,6 +24,12 @@ func main() {
 	db.InitDB()
 	defer db.DB.Close() // Close the DB connection when the application shuts down
 
+	// Run database migrations
+	err := db.RunMigrations()
+	if err != nil {
+		log.Fatalf("Error running migrations: %v", err)
+	}
+
 	// Set up the server with routes
 	router := routes.NewRouter()
 
