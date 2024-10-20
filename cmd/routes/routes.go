@@ -17,6 +17,7 @@ func NewRouter() http.Handler {
 	mux.HandleFunc("/create_rule", CreateRuleHandler)
 	mux.HandleFunc("/combine_rules", CombineRulesHandler)
 	mux.HandleFunc("/evaluate_rule", EvaluateRuleHandler)
+	mux.HandleFunc("/ping", PongHandler)
 	return mux
 }
 
@@ -110,7 +111,7 @@ func CombineRulesHandler(w http.ResponseWriter, r *http.Request) {
 	responseData := map[string]interface{}{
 		"rule_id":       ruleID,
 		"combined_rule": combinedRuleString,
-		"node":  combinedAST,
+		"node":          combinedAST,
 	}
 
 	// Send success response
@@ -143,6 +144,15 @@ func EvaluateRuleHandler(w http.ResponseWriter, r *http.Request) {
 	// Prepare response data
 	responseData := map[string]interface{}{
 		"result": result,
+	}
+
+	// Send success response
+	SendSuccessResponse(w, http.StatusOK, "Rule evaluated successfully", responseData)
+}
+
+func PongHandler(w http.ResponseWriter, r *http.Request) {
+	responseData := map[string]interface{}{
+		"result": "Pong",
 	}
 
 	// Send success response
